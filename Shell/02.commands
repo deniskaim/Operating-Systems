@@ -165,7 +165,7 @@ Task: 02-a-6000.txt
 Намерете файловете в /bin, които могат да се четат, пишат и изпълняват от всички.
 
 Solution:
-find /bin -perm 777
+find /bin -type f -perm 777
 
 --------------------
 
@@ -202,4 +202,4 @@ Task: 02-b-4000.txt
 Копирайте най-малкия файл от тези, намиращи се в /etc, в home директорията си.
 
 Solution:
-(TO DO)
+cp $(find /etc -type f -printf '%p %s\n' 2>/dev/null | sort -t ' ' -k 2 -n | head -n 1 | cut -d ' ' -f 1 ) ~
