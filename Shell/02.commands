@@ -47,7 +47,7 @@ Task: 02-a-1200.txt
 Отпечатайте имената на всички директории в директорията /home.
 
 Solution:
-ls -d /home/*
+find /home -mindepth 1 -maxdepth 1 -type d -printf '%P\n'
 
 --------------------
 
