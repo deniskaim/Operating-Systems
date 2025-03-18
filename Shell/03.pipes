@@ -3,7 +3,8 @@ Task: 03-a-0200.txt
 Сортирайте /etc/passwd лексикографски по поле UserID.
 
 Solution:
-sort -t ':' -k 3 /etc/passwd
+1) sort -t ':' -k 3,3 /etc/passwd
+2) cat /etc/passwd | sort -t ':' -k 3,3
 
 --------------------
 
@@ -12,7 +13,8 @@ Task:  03-a-0201.txt
 (Открийте разликите с лексикографската сортировка)
 
 Solution:
-sort -n -t ':' -k 3 /etc/passwd
+1) sort -n -t ':' -k 3,3 /etc/passwd
+2) cat /etc/passwd | sort -n -t ':' -k 3,3
 
 --------------------
 
@@ -20,7 +22,8 @@ Task: 03-a-0210.txt
 Изведете само 1-ва и 5-та колона на файла /etc/passwd спрямо разделител ":".
 
 Solution:
-cut -d ':' -f 1,5 /etc/passwd
+1) cut -d ':' -f 1,5 /etc/passwd
+2) cat /etc/passwd | cut -d ':' -f 1,5
 
 --------------------
 
@@ -28,7 +31,7 @@ Task: 03-a-0211.txt
 Изведете съдържанието на файла /etc/passwd от 2-ри до 6-ти символ.
 
 Solution:
-cut -c 2-6 /etc/passwd
+cat /etc/passwd | tr -d '\n' | cut -c 2-6
 
 --------------------
 
@@ -36,7 +39,8 @@ Task: 03-a-0212.txt
 Отпечатайте потребителските имена и техните home директории от /etc/passwd.
 
 Solution:
-cut -d ':' -f 5,6 /etc/passwd
+1) cut -d ':' -f 1,6 /etc/passwd
+2) cat /etc/passwd | cut -d ':' -f 1,6
 
 --------------------
 
@@ -44,7 +48,8 @@ Task: 03-a-0213.txt
 Отпечатайте втората колона на /etc/passwd, разделена спрямо символ '/'.
 
 Solution:
-cut -d '/' -f 2 /etc/passwd
+1) cut -d '/' -f 2 /etc/passwd
+2) cat /etc/passwd | cut -d '/' -f 2
 
 --------------------
 
@@ -55,7 +60,12 @@ Task: 03-a-1500.txt
 
 Solution:
 wc -c -m -l /etc/passwd
-
+или
+cat /etc/passwd | wc -c
+cat /etc/passwd | wc -m
+cat /etc/passwd | wc -l
+или
+cat /etc/passwd | wc -c -m -l
 --------------------
 
 Task: 03-a-2000.txt
@@ -69,7 +79,7 @@ Task: 03-a-2000.txt
 
 Solution:
 head -n 12 /etc/passwd
-cut -c 1-26 /etc/passwd
+cat /etc/passwd | tr -d '\n' | cut -c 1-26
 head -n -4 /etc/passwd
 tail -n 17 /etc/passwd
 head -n 151 /etc/passwd | tail -n 1
@@ -83,8 +93,8 @@ Task:  03-a-3000.txt
 Напишете команда, която извежда на екрана съдържанието на този файл, без първия ред (хедъра), сортирано по второ поле (numeric).
 
 Solution:
-df -P > 03-a-3000_result.txt
-tail -n +2 ~/03-a-3000_result.txt | sort -n -k 2
+df -P > ~/03-a-3000_result.txt
+cat ~/03-a-3000_result.txt | tail -n +2 | tr -s ' ' | sort -n -t ' ' -k 2,2
 
 --------------------
 
