@@ -124,11 +124,11 @@ Task: 03-a-5000.txt
 4) Изведете *само* реда, който се намира 2 реда преди реда, съдържащ информация за вашия потребител.
 
 Solution:
-1) grep $(id -u) /etc/passwd
-2) grep $(id -u) -B 2 /etc/passwd
-3) grep $(id -u) -B 2 -A 3 /etc/passwd
-4) grep $(id -u) -B 2 /etc/passwd | head -n 1
-
+1) grep $(id -un) /etc/passwd
+2) grep $(id -un) -B 2 /etc/passwd
+3) grep $(id -un) -B 2 -A 3 /etc/passwd
+4) grep $(id -un) -B 2 /etc/passwd | head -n 1
+Добра практика: grep "^$(id -un)' /etc/passwd или grep "^$(whoami) /etc/passwd
 --------------------
 
 Task: 03-a-5001.txt
@@ -224,5 +224,172 @@ Solution:
 find / -maxdepth 3 -type d ! -executable 2>/dev/null
 
 --------------------
+(TO DO) - 03-b-4*.txt
 
+--------------------
+
+Task: 03-b-5200.txt
+Намерете броя на символите, различни от буквата 'а' във файла /etc/passwd
+
+Solution:
+grep -E -o '[^a]' /etc/passwd | wc -l
+
+--------------------
+
+Task: 03-b-5300.txt
+Намерете броя на уникалните символи, използвани в имената на потребителите от
+/etc/passwd.
+
+Solution:
+cut -d ':' -f 1 /etc/passwd | fold -w 1 | sort | uniq | wc -l
+
+--------------------
+
+Task: 03-b-5400.txt
+Отпечатайте всички редове на файла /etc/passwd, които не съдържат символния низ 'ов'.
+
+Solution:
+grep -E -v 'ов' /etc/passwd
+
+--------------------
+
+Task: 03-b-6100.txt
+Отпечатайте последната цифра на UID на всички редове между 28-ми и 46-ред в /etc/passwd.
+
+Solution:
+1) head -n 46 /etc/passwd | tail -n +28 | cut -d ':' -f 3 | rev | cut -c 1
+2) head -n 46 /etc/passwd | tail -n +28 | cut -d ':' -f 3 | grep -E -o '[0-9]$'
+
+--------------------
+
+Task: 03-b-6700.txt
+Отпечатайте правата (permissions) и имената на всички файлове, до които имате
+read достъп, намиращи се в директорията /tmp. (hint: 'man find', вижте -readable)
+
+Solution:
+find /tmp -type f -readable -printf '%M %f\n'
+
+--------------------
+
+Task: 03-b-6900.txt
+Намерете имената на 10-те файла във вашата home директория, чието съдържание е
+редактирано най-скоро. На първо място трябва да бъде най-скоро редактираният
+файл. Намерете 10-те най-скоро достъпени файлове. (hint: Unix time)
+
+Solution:
+find ~ -type f -printf '%f %T@\n' | sort -n -r -t ' ' -k 2 | head | cut -d ' ' -f 1
+find ~ -type f -printf '%f %A@\n' | sort -n -r -t ' ' -k 2 | head | cut -d ' ' -f 1
+
+--------------------
+
+Task:  03-b-7000.txt
+да приемем, че файловете, които съдържат C код, завършват на `.c` или `.h`.
+1) Колко на брой са те в директорията `/usr/include`?
+2) Колко реда C код има в тези файлове?
+
+Solution:
+1) find /usr/include -type f -name '*.c' -o -name '*.h' | wc -l
+2) find /usr/include -type f -name "*.c" -o -name "*.h" -exec wc -l {} \;
+
+--------------------
+
+Task: 03-b-7500.txt
+Даден ви е ASCII текстов файл - /etc/services. Отпечатайте хистограма на 10-те най-често срещани думи.
+Дума наричаме непразна последователност от букви. Не правим разлика между главни и малки букви.
+Хистограма наричаме поредица от редове, всеки от които има вида:
+<брой срещания> <какво се среща толкова пъти>
+
+Solution:
+cat /etc/services | tr '\t ' '\n' | tr -s '\n' | sort | uniq -c | sort -n -r -t ' ' -k 1 | head
+
+--------------------
+
+Task: 03-b-8000.txt
+Вземете факултетните номера на студентите (описани във файла
+<РЕПО>/exercises/data/mypasswd.txt) от СИ и ги запишете във файл si.txt сортирани.
+
+Студент е част от СИ, ако home директорията на този потребител (според
+<РЕПО>/exercises/data/mypasswd.txt) се намира в /home/SI директорията.
+
+Solution:
+grep '/home/SI' /srv/fmi-os/exercises/data/mypasswd.txt | cut -d ':' -f 1 | sort -n > ~/si.txt
+
+-------------------
+
+Task: 03-b-8500.txt
+За всяка група от /etc/group изпишете "Hello, <група>", като ако това е вашата група, напишете "Hello, <група> - I am here!".
+
+Solution:
+(TO DO)
+
+-------------------
+
+Task: 03-b-8600.txt
+Shell Script-овете са файлове, които по конвенция имат разширение .sh. Всеки
+такъв файл започва с "#!<interpreter>" , където <interpreter> указва на
+операционната система какъв интерпретатор да пусне (пр: "#!/bin/bash",
+"#!/usr/bin/python3 -u").
+
+Намерете всички .sh файлове в директорията `/usr` и нейните поддиректории, и
+проверете кой е най-често използваният интерпретатор.
+
+Solution:
+find /usr -type f -name '*.sh' -exec head -n 1 {} \; | grep -E '^#!' | cut -d '!' -f 2 | tr -d ' ' | sort | uniq -c | sort -n -r -t ' ' -k 1 | head -n 1 | tr -s ' ' | cut -d ' ' -f 3
+
+-------------------
+
+Task:  03-b-8700.txt
+1. Изведете GID-овете на 5-те най-големи групи спрямо броя потребители, за които
+съответната група е основна (primary).
+
+2. (*) Изведете имената на съответните групи.
+
+Solution:
+1) cut -d ':' -f 4 /etc/passwd | sort | uniq -c | sort -n -r -t ' ' -k 1 | tr -s ' ' | cut -d ' ' -f 3 | head -n 5
+2) (TO DO)
+
+-------------------
+
+Task: 03-b-9000.txt
+Направете файл eternity. Намерете всички файлове, намиращи се във вашата home
+директория и нейните поддиректории, които са били модифицирани в последните
+15мин (по възможност изключете .).  Запишете във eternity името (път) на
+файла и времето (unix time) на последната промяна.
+
+Solution:
+find ~ -type f ! -name 'eternity' -mmin -15 -printf '%p %T@\n' > ~/eternity
+
+-------------------
+
+Task: 03-b-9050.txt
+Копирайте файл <РЕПО>/exercises/data/population.csv във вашата home директория.
+
+Solution:
+cp /srv/fmi-os/exercises/data/population.csv ~
+
+-------------------
+
+Task: 03-b-9051.txt
+Използвайки файл population.csv, намерете колко е общото население на света
+през 2008 година. А през 2016?
+
+Solution:
+(TO DO)
+
+-------------------
+
+Task: 03-b-9052.txt
+Използвайки файл population.csv, намерете през коя година в България има най-много население.
+
+Solution:
+grep -E '^Bulgaria.*$' ~/population.csv | cut -d ',' -f 3,4 | sort -n -r -t ',' -k 2 | head -n 1 | cut -d ',' -f1
+
+-------------------
+
+Task: 03-b-9053.txt
+Използвайки файл population.csv, намерете коя държава има най-много население през 2016. А коя е с най-малко население?
+(Hint: Погледнете имената на държавите)
+
+Solution:
+(TO DO)
 
