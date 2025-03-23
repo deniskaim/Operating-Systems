@@ -277,8 +277,8 @@ Task: 03-b-6900.txt
 файл. Намерете 10-те най-скоро достъпени файлове. (hint: Unix time)
 
 Solution:
-find ~ -type f -printf '%f %T@\n' | sort -n -r -t ' ' -k 2 | head | cut -d ' ' -f 1
-find ~ -type f -printf '%f %A@\n' | sort -n -r -t ' ' -k 2 | head | cut -d ' ' -f 1
+find ~ -type f -printf '%f %T@\n' | sort -n -r -t ' ' -k 2,2 | head | cut -d ' ' -f 1
+find ~ -type f -printf '%f %A@\n' | sort -n -r -t ' ' -k 2,2 | head | cut -d ' ' -f 1
 
 --------------------
 
@@ -300,7 +300,7 @@ Task: 03-b-7500.txt
 <брой срещания> <какво се среща толкова пъти>
 
 Solution:
-cat /etc/services | tr '\t ' '\n' | tr -s '\n' | sort | uniq -c | sort -n -r -t ' ' -k 1 | head
+cat /etc/services | tr '\t ' '\n' | tr -s '\n' | sort | uniq -c | sort -n -r -t ' ' -k 1,1 | head
 
 --------------------
 
@@ -334,7 +334,7 @@ Shell Script-овете са файлове, които по конвенция 
 проверете кой е най-често използваният интерпретатор.
 
 Solution:
-find /usr -type f -name '*.sh' -exec head -n 1 {} \; | grep -E '^#!' | cut -d '!' -f 2 | tr -d ' ' | sort | uniq -c | sort -n -r -t ' ' -k 1 | head -n 1 | tr -s ' ' | cut -d ' ' -f 3
+find /usr -type f -name '*.sh' -exec head -n 1 {} \; | grep -E '^#!' | cut -d '!' -f 2 | tr -d ' ' | sort | uniq -c | sort -n -r -t ' ' -k 1,1 | head -n 1 | tr -s ' ' | cut -d ' ' -f 3
 
 -------------------
 
@@ -345,7 +345,7 @@ Task:  03-b-8700.txt
 2. (*) Изведете имената на съответните групи.
 
 Solution:
-1) cut -d ':' -f 4 /etc/passwd | sort | uniq -c | sort -n -r -t ' ' -k 1 | tr -s ' ' | cut -d ' ' -f 3 | head -n 5
+1) cut -d ':' -f 4 /etc/passwd | sort | uniq -c | sort -n -r -t ' ' -k 1,1 | tr -s ' ' | cut -d ' ' -f 3 | head -n 5
 2) (TO DO)
 
 -------------------
@@ -382,7 +382,7 @@ Task: 03-b-9052.txt
 Използвайки файл population.csv, намерете през коя година в България има най-много население.
 
 Solution:
-grep -E '^Bulgaria.*$' ~/population.csv | cut -d ',' -f 3,4 | sort -n -r -t ',' -k 2 | head -n 1 | cut -d ',' -f1
+grep -E '^Bulgaria.*$' ~/population.csv | cut -d ',' -f 3,4 | sort -n -r -t ',' -k 2,2 | head -n 1 | cut -d ',' -f1
 
 -------------------
 
@@ -391,5 +391,43 @@ Task: 03-b-9053.txt
 (Hint: Погледнете имената на държавите)
 
 Solution:
-(TO DO)
+grep -E -o '[^"]*,2016,.+' ~/population.csv | sort -n -r -t ',' -k 4,4 | head -n 1 | cut -d ',' -f 1
+grep -E -o '[^"]*,2016,.+' ~/population.csv | sort -n -r -t ',' -k 4,4 | tail -n 1 | cut -d ',' -f 1
 
+П.П: Може да се подобри с awk заради имена, съдържащи '"'.
+-------------------
+
+Task: 03-b-9054.txt
+Използвайки файл population.csv, намерете коя държава е на 42-ро място по
+население през 1969. Колко е населението й през тази година?
+
+Solution:
+grep -E "$(grep -E -o '[^"]*,1969,.*$' ~/population.csv | sort -n -t ',' -k 4,4 | head -n 42 | tail -n 1 | cut -d ',' -f 2),1969.*$" ~/population.csv | cut -d ',' -f 1
+grep -E "$(grep -E -o '[^"]*,1969,.*$' ~/population.csv | sort -n -t ',' -k 4,4 | head -n 42 | tail -n 1 | cut -d ',' -f 2),1969.*$" ~/population.csv | cut -d ',' -f 4
+
+-------------------
+
+Task: 03-b-9100.txt
+В home директорията си изпълнете командата
+curl -o songs.tar.gz "http://fangorn.uni-sofia.bg/misc/songs.tar.gz"
+
+Solution:
+DONE
+
+-------------------
+
+Task: 03-b-9101.txt
+Да се разархивира архивът songs.tar.gz в директория songs във вашата home директория.
+
+Solution:
+
+
+-------------------
+
+Task: 03-b-9200.txt
+Напишете серия от команди, които извеждат детайли за файловете и директориите в
+текущата директория, които имат същите права за достъп както най-големият файл
+в /etc директорията.
+
+Solution:
+find . -maxdepth 1 -perm $(find /etc -printf '%m %s\n' 2>/dev/null | sort -n -r -t ' ' -k 2,2 | head -n 1 | cut -d ' ' -f 1)
