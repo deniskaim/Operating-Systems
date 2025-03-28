@@ -128,7 +128,7 @@ Solution:
 2) grep $(id -un) -B 2 /etc/passwd
 3) grep $(id -un) -B 2 -A 3 /etc/passwd
 4) grep $(id -un) -B 2 /etc/passwd | head -n 1
-Добра практика: grep "^$(id -un)' /etc/passwd или grep "^$(whoami) /etc/passwd
+Добра практика: grep "^$(id -un)" /etc/passwd или grep "^$(whoami)" /etc/passwd
 --------------------
 
 Task: 03-a-5001.txt
