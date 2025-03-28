@@ -336,7 +336,7 @@ Task: 03-b-8500.txt
 За всяка група от /etc/group изпишете "Hello, <група>", като ако това е вашата група, напишете "Hello, <група> - I am here!".
 
 Solution:
-(TO DO)
+cut -d ':' -f 1 /etc/group | awk -v mygroup=$(id -gn) '{if ($0==mygroup) {print "Hello",$0,"- I am here!"} else {print "Hello",$0}}'
 
 -------------------
 
@@ -361,7 +361,7 @@ Task:  03-b-8700.txt
 2. (*) Изведете имената на съответните групи.
 
 Solution:
-1) cut -d ':' -f 4 /etc/passwd | sort | uniq -c | sort -n -r -t ' ' -k 1,1 | tr -s ' ' | cut -d ' ' -f 3 | head -n 5
+1) cut -d ':' -f 4 /etc/passwd | sort | uniq -c | sort -n -r | tr -s ' ' | cut -d ' ' -f 3 | head -n 5
 2) (TO DO)
 
 -------------------
@@ -390,7 +390,8 @@ Task: 03-b-9051.txt
 през 2008 година. А през 2016?
 
 Solution:
-(TO DO)
+grep -E '^.*,2008,.*$' population.csv | rev | cut -d ',' -f 1 | rev | awk '{sum += $0} END {print sum}'
+grep -E '^.*,2016,.*$' population.csv | rev | cut -d ',' -f 1 | rev | awk '{sum += $0} END {print sum}'
 
 -------------------
 
@@ -399,7 +400,8 @@ Task: 03-b-9052.txt
 
 Solution:
 grep -E '^Bulgaria.*$' ~/population.csv | cut -d ',' -f 3,4 | sort -n -r -t ',' -k 2,2 | head -n 1 | cut -d ',' -f1
-
+OR
+grep -E '^Bulgaria.*$' population.csv | rev | cut -d ',' -f 1,2 | rev | sort -n -r -t ',' -k 2,2 | head -n 1 | cut -d ',' -f 1
 -------------------
 
 Task: 03-b-9053.txt
@@ -407,8 +409,8 @@ Task: 03-b-9053.txt
 (Hint: Погледнете имената на държавите)
 
 Solution:
-grep -E -o '[^"]*,2016,.+' ~/population.csv | sort -n -r -t ',' -k 4,4 | head -n 1 | cut -d ',' -f 1
-grep -E -o '[^"]*,2016,.+' ~/population.csv | sort -n -r -t ',' -k 4,4 | tail -n 1 | cut -d ',' -f 1
+grep -E '^.*,2016,.*' population.csv | sed -E 's/("[^,]+),/\1!/g' | sort -t ',' -k 4,4 -n -r | head -n 1 | cut -d ',' -f 1 | sed 's/!/,/g'
+grep -E '^.*,2016,.*' population.csv | sed -E 's/("[^,]+),/\1!/g' | sort -t ',' -k 4,4 -n | head -n 1 | cut -d ',' -f 1 | sed 's/!/,/g'
 
 П.П: Може да се подобри с awk заради имена, съдържащи '"'.
 -------------------
@@ -436,7 +438,47 @@ Task: 03-b-9101.txt
 Да се разархивира архивът songs.tar.gz в директория songs във вашата home директория.
 
 Solution:
+TO DO
 
+-------------------
+
+Task: 03-b-9102.txt
+Да се изведат само имената на песните.
+
+Solution:
+TO DO
+
+--------------------
+Task: 03-b-9103.txt
+Имената на песните да се направят с малки букви, да се заменят спейсовете с
+долни черти и да се сортират.
+
+Solution:
+TO DO
+
+-------------------
+
+Task: 03-b-9104.txt
+Да се изведат всички албуми, сортирани по година.
+
+Solution:
+TO DO
+
+-------------------
+
+Task: 03-b-9105.txt
+Да се преброят/изведат само песните на Beatles и Pink.
+
+Solution:
+TO DO
+
+-------------------
+
+Task: 03-b-9106.txt
+Да се направят директории с имената на уникалните групи. За улеснение, имената
+от две думи да се напишат слято:
+
+Beatles, PinkFloyd, Madness
 
 -------------------
 
@@ -447,3 +489,102 @@ Task: 03-b-9200.txt
 
 Solution:
 find . -maxdepth 1 -perm $(find /etc -printf '%m %s\n' 2>/dev/null | sort -n -r -t ' ' -k 2,2 | head -n 1 | cut -d ' ' -f 1)
+
+-------------------
+
+Task: 03-b-9300.txt
+Дадени са ви 2 списъка с email адреси - първият има 12 валидни адреса, а
+вторията има само невалидни. Филтрирайте всички адреси, така че да останат
+само валидните. Колко кратък регулярен израз можете да направите за целта?
+
+Валидни email адреси (12 на брой):
+email@example.com
+firstname.lastname@example.com
+email@subdomain.example.com
+email@123.123.123.123
+1234567890@example.com
+email@example-one.com
+_______@example.com
+email@example.name
+email@example.museum
+email@example.co.jp
+firstname-lastname@example.com
+unusually.long.long.name@example.com
+
+Невалидни email адреси:
+#@%^%#$@#$@#.com
+@example.com
+myemail
+Joe Smith <email@example.com>
+email.example.com
+email@example@example.com
+.email@example.com
+email.@example.com
+email..email@example.com
+email@-example.com
+email@example..com
+Abc..123@example.com
+(),:;<>[\]@example.com
+just"not"right@example.com
+this\ is"really"not\allowed@example.com
+
+Solution:
+TO DO
+
+-------------------
+
+Task: 03-b-9400.txt
+Посредством awk, използвайки emp.data (от 03-a-6000.txt) за входнни данни,
+изведете:
+
+- всеки ред, като полетата са в обратен ред
+
+(Разгледайте for цикли в awk)
+
+Solution:
+awk '{for (i = NF; i >= 1; i--) {printf "%s ", $i}; {print ""}}' emp.data
+
+-------------------
+
+Tak: 03-b-9500.txt
+Копирайте <РЕПО>/exercises/data/ssa-input.txt във вашата home директория.
+Общият вид на файла е:
+
+- заглавна част:
+        Smart Array P440ar in Slot 0 (Embedded)
+
+- една или повече секции за масиви:
+        Array A
+        Array B
+        ...
+        като буквата (A, B, ...) е името на масива
+
+- във всяка таква секция има една или повече подсекции за дискове:
+        physicaldrive 2I:0:5
+        physicaldrive 2I:0:6
+        ...
+
+        като 2I:0:5 е името на диска
+
+- във всяка подсекция за диск има множество параметри във вида:
+        key name: value
+        като за нас са интересни само:
+
+                Current Temperature (C): 35
+                Maximum Temperature (C): 36
+
+Напишете поредица от команди която обработва файл в този формат, и генерира
+следният изход:
+
+A-2I:0:5 35 36
+A-2I:0:6 34 35
+B-1I:1:1 35 50
+B-1I:1:2 35 49
+
+x-yyyyyy zz ww
+
+където:
+        - x е името на масива
+        - yyyyyy е името на диска
+        - zz е current temperature
+        - ww е max temperature
