@@ -188,8 +188,24 @@ Task:  03-a-6000.txt
 - сумата на второ и трето поле от всеки ред
 
 Solution:
-(TO DO)
-
+1) awk 'BEGIN {rowsCount=0} {rowsCount+=1} END {print rowsCount}' emp.data
+2) awk 'NR == 3 {print $0}' emp.data
+3) awk '{print $NF}' emp.data
+4) awk 'END {print $NF}' emp.data OR awk '{print $NF}' emp.data | tail -n 1
+5) awk 'NF > 4' emp.data
+6) awk '$NF > 4' emp.data
+7) awk 'BEGIN {allCols = 0} {allCols += NF} END {print allCols}' emp.data
+8) awk 'BEGIN {count = 0} $0 ~ /Beth/ {count += 1} END {print count}' emp.data OR awk '$0 ~ /Beth/' emp.data | wc -l
+9) awk '$3 > max {max = $3; row = $0} END {printf "Max value is: %s\nRow is: %s\n", max, row}' emp.data
+10) awk 'NF >= 1' emp.data
+11) awk 'length($0) > 17' emp.data
+12) awk '{print $0, " Number of fields: ", NF}' emp.data
+13) awk '{print $2, $1}' emp.data
+14) awk '{temp=$2;$2=$1;$1=temp;print $0}' emp.data
+15) awk '{$1=NR;print $0}' emp.data
+16) awk '{$2="";print $0}' emp.data | tr -s ' '
+17) awk '{print "Sum of 2nd and 3rd columns = ", $2 + $3}' emp.data
+18) awk 'BEGIN {sum=0} {sum+=$2+$3} END {print sum}' emp.data
 --------------------
 
 Task: 03-b-0300.txt
