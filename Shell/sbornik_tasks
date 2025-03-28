@@ -67,7 +67,7 @@ grep -E "$(grep -E 'Inf' my_etc_passwd | cut -d ':' -f 5 | cut -d ',' -f1 | grep
 Намерете имената на топ 5 файловете в текущата директория с най-много hardlinks
 
 Solution:
-find . -type f -printf '%n %f\n' | sort -n -r -t ' ' -k 1,1 |head -n 5 | cut -d ' ' -f 2-
+find . -type f -printf '%n %f\n' | sort -n -r -t ' ' -k 1,1 | head -n 5 | cut -d ' ' -f 2-
 
 ---------------------
 
