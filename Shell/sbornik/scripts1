@@ -26,49 +26,49 @@ find "${1}" -type l ! -exec test -e {} \; -print
 Ако за някой потребител обобщеното число надвишава подадения параметър,да изпраща подходящи сигнали за прекратяване на процеса с най-много активна памет на потребителя.
 
 Solution:
- #!/bin/bash
-  2
-  3 if [[ ${#} -ne 1 ]]; then
-  4     echo "Illegal arguments count!"
-  5     exit 1
-  6 fi
-  7
-  8 if ! echo "${1}" | grep -q -E '^([1-9]+[0-9]*|0)$'; then
-  9     echo "The argument must be a number!"
- 10     exit 2
- 11 fi
- 12
- 13 if [[ ! $(id -u) -ne 0 ]]; then
- 14     echo "The script must be run by root"
- 15     exit 3
- 16 fi
- 17
- 18 upperBoundRSS="${1}"
- 19 count=0
- 20
- 21 function calculateUserRSS {
- 22     while read userRSS; do
- 23         count=$((count + ${userRSS}))
- 24     done < <(ps -u "${1}" -o rss=)
- 25 }
- 26
- 27 function killUsersMostActiveProcess {
- 28     pid=$(ps -u "${1}" -o pid=,rss= | sort -n -r -t ' ' -k 2,2 | head -n 1 | cut -d ' ' -f 2)
- 29     kill "${pid}"
- 30 }
- 31
- 32 while read processLine; do
- 33     uid=$(echo "${processLine}" | cut -d ' ' -f 2)
- 34     count=0
- 35     calculateUserRSS "${uid}"
- 36     echo "${uid}" has "${count}" RSS
- 37
- 38     if [[ "${count}" -gt "${upperBoundRSS}" ]]; then
- 39         echo "I AM IN"
- 40         killUsersMostActiveProcess "${uid}"
- 41     fi
- 42
- 43 done < <(ps -e -o uid= | sort -n | uniq | tr -s ' ')
+#!/bin/bash
+
+if [[ ${#} -ne 1 ]]; then
+    echo "Illegal arguments count!"
+    exit 1
+fi
+
+if ! echo "${1}" | grep -q -E '^([1-9]+[0-9]*|0)$'; then
+    echo "The argument must be a number!"
+    exit 2
+fi
+
+if [[ ! $(id -u) -ne 0 ]]; then
+    echo "The script must be run by root"
+    exit 3
+fi
+
+upperBoundRSS="${1}"
+count=0
+
+function calculateUserRSS {
+    while read userRSS; do
+        count=$((count + ${userRSS}))
+    done < <(ps -u "${1}" -o rss=)
+}
+
+function killUsersMostActiveProcess {
+    pid=$(ps -u "${1}" -o pid=,rss= | sort -n -r -t ' ' -k 2,2 | head -n 1 | cut -d ' ' -f 2)
+    kill "${pid}"
+}
+
+while read processLine; do
+    uid=$(echo "${processLine}" | cut -d ' ' -f 2)
+    count=0
+    calculateUserRSS "${uid}"
+    echo "${uid}" has "${count}" RSS
+
+    if [[ "${count}" -gt "${upperBoundRSS}" ]]; then
+        echo "I AM IN"
+        killUsersMostActiveProcess "${uid}"
+    fi
+
+done < <(ps -e -o uid= | sort -n | uniq | tr -s ' ')
 
 --------------------------------------------------------
 Зад. 19 2016-SE-03 
@@ -82,26 +82,65 @@ Solution:
 
 Solution:
 #!/bin/bash
-  2
-  3 if [[ $(id -u) -eq 0 ]]; then
-  4     echo "Script must be run as root"
-  5     exit 1
-  6 fi
-  7
-  8 # All users who don't have a home directory
-  9 cat /etc/passwd | awk -F ':' '$6 !~ /^\/home\// {print $1}'
- 10
- 11 # All users who don't W permission in their home directory
- 12 for homeDir in $(cat /etc/passwd | awk -F ':' '$6 ~ /^\/home\// {print $6}'); do
- 13     perm=$(stat -c "%a" "${homeDir}" | cut -c 1)
- 14
- 15     if [[ "${perm}" -eq 0 || "${perm}" -eq 1 || "${perm}" -eq 4 || "${perm}" -eq 5 ]]; then
- 16         echo "${homeDir}"
- 17         echo $(stat -c "%U" "${homeDir}")
- 18     fi
- 19 done
+
+if [[ $(id -u) -eq 0 ]]; then
+    echo "Script must be run as root"
+    exit 1
+fi
+
+# All users who don't have a home directory
+cat /etc/passwd | awk -F ':' '$6 !~ /^\/home\// {print $1}'
+
+# All users who don't W permission in their home directory
+for homeDir in $(cat /etc/passwd | awk -F ':' '$6 ~ /^\/home\// {print $6}'); do
+    perm=$(stat -c "%a" "${homeDir}" | cut -c 1)
+
+    if [[ "${perm}" -eq 0 || "${perm}" -eq 1 || "${perm}" -eq 4 || "${perm}" -eq 5 ]]; then
+        echo "${homeDir}"
+        echo $(stat -c "%U" "${homeDir}")
+    fi
+done
+
 --------------------------------------------------------
 
+Зад. 20 2016-SE-04
+В текущата директория има само обикновени файлове (без директории). Да се напише bash script, който приема 2 позиционни параметъра – числа, който мести файловете от текущата 
+директория към нови директории (a, b и c, които трябва да бъдат създадени), като определен файл се мести:
+
+към директория ’a’, само ако той има по-малко редове от първи позиционен параметър, мести
+към директория ’b’, ако редове са между първи и втори позиционен параметър 
+и в ’c’ в останалите случаи.
+
+Solution:
+#!/bin/bash
+
+if [[ "${#}" -ne 2 ]]; then
+    echo "Illegal arguments count"
+    exit 1
+fi
+
+if ! echo ${1} | grep -q -E '^([1-9]+[0-9]*|0)$'; then
+    echo "Argument 1 must be a number!"
+    exit 2
+fi
+
+if ! echo ${2} | grep -q -E '^([1-9]+[0-9]*|0)$'; then
+    echo "Argument 2 must be a number!"
+    exit 3
+fi
+
+mkdir -p ./{a,b,c}
+
+for file in $(realpath $(find . -type f)); do
+    linesCount=$(cat "${file}" | wc -l)
+    if [[ "${linesCount}" -lt "${1}" ]]; then
+        mv "${file}" ./a
+    elif [[ "${linesCount}" -ge "${1}" && "${linesCount}" -le "${2}" ]]; then
+        mv "${file}" ./b
+    else
+        mv "${file}" ./c
+    fi
+done
 
 --------------------------------------------------------
 --------------------------------------------------------
