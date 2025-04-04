@@ -71,7 +71,38 @@ Solution:
  43 done < <(ps -e -o uid= | sort -n | uniq | tr -s ' ')
 
 --------------------------------------------------------
+Зад. 19 2016-SE-03 
+Напишете shell скрипт който, ако се изпълнява от root, проверява кои потребители на
+ системата нямат homedir или не могат да пишат в него.
+
+ Примерен формат:
+ root:x:0:0:root:/root:/bin/bash
+ daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+ bin:x:2:2:bin:/bin:/usr/sbin/nologin
+
+Solution:
+#!/bin/bash
+  2
+  3 if [[ $(id -u) -eq 0 ]]; then
+  4     echo "Script must be run as root"
+  5     exit 1
+  6 fi
+  7
+  8 # All users who don't have a home directory
+  9 cat /etc/passwd | awk -F ':' '$6 !~ /^\/home\// {print $1}'
+ 10
+ 11 # All users who don't W permission in their home directory
+ 12 for homeDir in $(cat /etc/passwd | awk -F ':' '$6 ~ /^\/home\// {print $6}'); do
+ 13     perm=$(stat -c "%a" "${homeDir}" | cut -c 1)
+ 14
+ 15     if [[ "${perm}" -eq 0 || "${perm}" -eq 1 || "${perm}" -eq 4 || "${perm}" -eq 5 ]]; then
+ 16         echo "${homeDir}"
+ 17         echo $(stat -c "%U" "${homeDir}")
+ 18     fi
+ 19 done
 --------------------------------------------------------
+
+
 --------------------------------------------------------
 --------------------------------------------------------
 --------------------------------------------------------
