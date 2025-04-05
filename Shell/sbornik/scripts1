@@ -277,6 +277,76 @@ rm -f "${tempFileA}"
 rm -f "${tempFileB}"
 
 --------------------------------------------------------
+Зад.24 2017-IN-02 
+Напишете скрипт,който приема задължителен позиционен аргумент - име на потребител FOO.
+Ако скриптът се изпълнява от root:
+ а) да извежда имената на потребителите, които имат повече на брой процеси от FOO, ако има та
+кива;
+ б) да извежда средното време (в секунди), за което са работили процесите на всички потребители на системата (TIME, във формат HH:MM:SS);
+ в) ако съществуват процеси на FOO, които са работили над два пъти повече от средното време, скриптът да прекратява изпълнението им по подходящ начин.
+
+Solution:
+#!/bin/bash
+
+if [[ ${#} -ne 1 ]]; then
+    echo "Invalid arguments count"
+    exit 1
+fi
+
+if [[ ! $(id -u) -ne 0 ]]; then
+    echo "Script must be run as root"
+    exit 2
+fi
+
+#Subtask 1
+
+allUsers=$(ps -e -o user=,pid=,time=)
+
+userCountTable=$(echo "${allUsers}" | awk '{print $1}' | sort | uniq -c)
+
+userCount=$(echo "${userCountTable}" | awk -v user="${1}" '$2==user {print $1}')
+
+while read line; do
+    currentCount=$(echo ${line} | cut -d ' ' -f 1)
+    currentUser=$(echo ${line} | cut -d ' ' -f 2)
+
+    if [[ ${currentCount} -gt ${userCount} ]]; then
+        echo "${currentUser}"
+    fi
+done < <(echo "${userCountTable}")
+
+
+
+
+#Subtask 2
+sumTime=$(echo "${allUsers}" | awk '{print $3}' | awk -F ':' 'BEGIN {sum=0} {sum+=$1*3600+$2*60+$3} END {print sum}')
+count=$(echo "${allUsers}" | wc -l)
+
+averageTime=$(echo "${sumTime} ${count}" | awk '{print $1/$2}')
+echo "Average time: " ${averageTime}
+
+
+
+#Subtask 3
+limit=$(echo "${averageTime}" | awk '{print $1*2}')
+
+tempFile=$(mktemp)
+while read line; do
+    echo ${line} | awk -v user="${1}" '$1==user {print $2 ":" $3}' >> "${tempFile}"
+done < <(echo "${allUsers}")
+
+pidsFile=$(mktemp)
+while read line; do
+    echo ${line} | awk -F ':' -v avgLimit="${limit}" '$2*3600+$3*60+$4>avgLimit {print $1}' >> "${pidsFile}"
+done < <(cat "${tempFile}")
+
+
+while read line; do
+    kill ${line}
+done < <(cat "${pidsFile}")
+
+rm -f ${tempFile}
+rm -f ${pidsFile}
 --------------------------------------------------------
 --------------------------------------------------------
 --------------------------------------------------------
