@@ -395,3 +395,95 @@ else
 fi
 --------------------------------------------------------
 
+Зад. 27 2017-SE-02:
+Напишете скрипт,който приема три задължителни позиционни параметъра - директория SRC, директория DST (която не трябва да съдържа файлове) и низ АBC.
+Ако скриптът се изпълнява от root потребителя, то той трябва да намира всички файлове в директорията SRC и нейните поддиректории, 
+които имат в името си като под-низ АBC, и да ги мести в директорията DST, запазвайки директорийната структура (но без да запазва мета-данни като собственик и права, т.е. 
+не ни интересуват тези параметри на новите директории, които скриптът би генерирал в DST).
+
+Solution:
+#!/bin/bash
+
+if [[ "${#}" -ne 1 ]]; then
+    echo "Invalid arguments count!"
+    exit 1
+fi
+
+if [[ ! -d "${1}" ]]; then
+    echo "Not a valid directory!"
+    exit 2
+fi
+
+find "${1}" -type l ! -exec test -e {} \; -print
+s0600294@astero:~$ vim ~/SCRIPTS/2017-SE-02
+s0600294@astero:~$ cat ~/SCRIPTS/2017-SE-02
+#!/bin/bash
+
+if [[ $# -ne 3 ]]; then
+    echo "Illegal arguments count"
+    exit 1
+fi
+
+if [[ ! -d "${1}" ]]; then
+    echo "Argument 1 must be a directory"
+    exit 2
+fi
+
+if [[ ! -d "${2}" ]]; then
+    echo "Argument 2 must be a directory"
+    exit 3
+fi
+
+if [[ -n $(find "${2}" -mindepth 1 -print -quit) ]]; then
+    echo "Directory 2 must be empty"
+    exit 4
+fi
+
+if [[ ! $(id -u) -ne 0 ]]; then
+    echo "Script must be run as root"
+    exit 5
+fi
+
+srcFiles=$(find "${1}" -type f -name "*${3}*")
+for fileName in ${srcFiles}; do
+    newDir=$(dirname "${fileName}" | sed "s:${1}:${2}:g")
+    mkdir -p ${newDir}
+    cp ${fileName} ${newDir}
+    rm ${fileName}
+done
+s0600294@astero:~$ ^C
+s0600294@astero:~$ vim ~/SCRIPTS/2017-SE-02 [A
+s0600294@astero:~$ cat ~/SCRIPTS/2017-SE-02
+#!/bin/bash
+
+if [[ $# -ne 3 ]]; then
+    echo "Illegal arguments count"
+    exit 1
+fi
+
+if [[ ! -d "${1}" ]]; then
+    echo "Argument 1 must be a directory"
+    exit 2
+fi
+
+if [[ ! -d "${2}" ]]; then
+    echo "Argument 2 must be a directory"
+    exit 3
+fi
+
+if [[ -n $(find "${2}" -mindepth 1 -print -quit) ]]; then
+    echo "Directory 2 must be empty"
+    exit 4
+fi
+
+if [[ $(id -u) -ne 0 ]]; then
+    echo "Script must be run as root"
+    exit 5
+fi
+
+srcFiles=$(find "${1}" -type f -name "*${3}*")
+for fileName in ${srcFiles}; do
+    newDir=$(dirname "${fileName}" | sed "s:${1}:${2}:g")
+    mkdir -p ${newDir}
+    cp "${fileName}" "${newDir}" && rm "${fileName}"
+done
