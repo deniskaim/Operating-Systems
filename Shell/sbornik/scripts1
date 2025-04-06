@@ -438,6 +438,7 @@ for fileName in ${srcFiles}; do
 done
 
 --------------------------------------------------------
+
  Зад. 28 2017-SE-03:
 Напишете скрипт, който ако се изпълнява от root потребителя:
  а) извежда обобщена информация за броя и общото количество активна памет (RSS- resident set
@@ -486,4 +487,41 @@ while read count user; do
     fi
 done < <(echo "${processesCount}")
 
--
+--------------------------------------------------------
+
+ Зад. 29 2017-SE-04:
+Напишете shell script, който получава задължителен първи позиционен параметър– директория и незадължителен втори– име на файл.
+Скриптът трябва да намира в подадената директория и нейните под-директории всички symlink-ове и да извежда (при подаден аргумент файл -
+добавяйки към файла, а ако не е – настандартния изход) за тях следната информация:
+ • ако destination-ът съществува – името на symlink-а -> името на destination-а;
+ • броя на symlink-овете, чийто destination не съществува.
+
+Solution:
+#!/bin/bash
+
+if [[ ${#} -ne 1 && ${#} -ne 2 ]]; then
+    echo "Illegal arguments count"
+    exit 1
+fi
+
+if [[ ! -d "${1}" ]]; then
+    echo "Argument 1 must be a directory"
+    exit 2
+fi
+
+if [[ ${#} -eq 2 ]]; then
+    exec > "${2}"
+fi
+
+count=0
+while IFS= read -r -d '' symlink; do
+    if [[ ! -e $(readlink "${symlink}") ]]; then
+        count=$((count+1))
+    else
+        echo $(basename "${symlink}") "->" $(basename $(readlink "${symlink}"))
+    fi
+done < <(find "${1}" -type l -print0 2>/dev/null)
+
+echo "Broken symlinks:" ${count}
+
+--------------------------------------------------------
