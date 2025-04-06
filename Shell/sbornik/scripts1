@@ -404,58 +404,6 @@ fi
 Solution:
 #!/bin/bash
 
-if [[ "${#}" -ne 1 ]]; then
-    echo "Invalid arguments count!"
-    exit 1
-fi
-
-if [[ ! -d "${1}" ]]; then
-    echo "Not a valid directory!"
-    exit 2
-fi
-
-find "${1}" -type l ! -exec test -e {} \; -print
-s0600294@astero:~$ vim ~/SCRIPTS/2017-SE-02
-s0600294@astero:~$ cat ~/SCRIPTS/2017-SE-02
-#!/bin/bash
-
-if [[ $# -ne 3 ]]; then
-    echo "Illegal arguments count"
-    exit 1
-fi
-
-if [[ ! -d "${1}" ]]; then
-    echo "Argument 1 must be a directory"
-    exit 2
-fi
-
-if [[ ! -d "${2}" ]]; then
-    echo "Argument 2 must be a directory"
-    exit 3
-fi
-
-if [[ -n $(find "${2}" -mindepth 1 -print -quit) ]]; then
-    echo "Directory 2 must be empty"
-    exit 4
-fi
-
-if [[ ! $(id -u) -ne 0 ]]; then
-    echo "Script must be run as root"
-    exit 5
-fi
-
-srcFiles=$(find "${1}" -type f -name "*${3}*")
-for fileName in ${srcFiles}; do
-    newDir=$(dirname "${fileName}" | sed "s:${1}:${2}:g")
-    mkdir -p ${newDir}
-    cp ${fileName} ${newDir}
-    rm ${fileName}
-done
-s0600294@astero:~$ ^C
-s0600294@astero:~$ vim ~/SCRIPTS/2017-SE-02 [A
-s0600294@astero:~$ cat ~/SCRIPTS/2017-SE-02
-#!/bin/bash
-
 if [[ $# -ne 3 ]]; then
     echo "Illegal arguments count"
     exit 1
@@ -485,5 +433,57 @@ srcFiles=$(find "${1}" -type f -name "*${3}*")
 for fileName in ${srcFiles}; do
     newDir=$(dirname "${fileName}" | sed "s:${1}:${2}:g")
     mkdir -p ${newDir}
-    cp "${fileName}" "${newDir}" && rm "${fileName}"
+    cp ${fileName} ${newDir}
+    rm ${fileName}
 done
+
+--------------------------------------------------------
+ Зад. 28 2017-SE-03:
+Напишете скрипт, който ако се изпълнява от root потребителя:
+ а) извежда обобщена информация за броя и общото количество активна памет (RSS- resident set
+ size, non-swaped physical memory that a task has used) на текущите процеси на всеки потребител;
+ б) ако процесът с най-голяма активна памет на даден потребител използва два пъти повече памет
+ от средното за потребителя, то скриптът да прекратява изпълнението му по подходящ начин.
+
+Solution:
+#!/bin/bash
+
+if [[ $(id -u) -ne 0 ]]; then
+    echo "Script must be run as root"
+    exit 1
+fi
+
+allUsersInfo=$(ps -e -o uid=,rss=,pid= | sort -t ' ' -k 1,1 -n)
+processesCount=$(echo "${allUsersInfo}" | awk '{print $1}' | uniq -c)
+
+while read count user; do
+    line=$(echo "${allUsersInfo}" | awk -v currUser=${user} '
+    BEGIN {
+        sum=0
+        biggestRSS=-1
+        pid=-1
+    }
+    {
+        if ($1==currUser) {
+            sum+=$2
+            if ($2 > biggestRSS) {
+                biggestRSS=$2
+                pid=$3
+            }
+        }
+    }  END {print sum, biggestRSS, pid}')
+
+    rssSum=$(echo "${line}" | cut -d ' ' -f 1)
+    biggestRSS=$(echo "${line}" | cut -d ' ' -f 2)
+    pid=$(echo "${line}" | cut -d ' ' -f 3)
+
+    echo "${user}'s count = " ${count} "and rss sum =" ${rssSum}
+    averageRSS=$(echo "${rssSum} / ${count}" | bc -l)
+
+    isGreater=$(echo "${biggestRSS} > 2 * ${averageRSS}" | bc -l)
+    if [[ "${isGreater}" -eq 1 ]]; then
+        kill "${pid}" 2>/dev/null
+    fi
+done < <(echo "${processesCount}")
+
+-
