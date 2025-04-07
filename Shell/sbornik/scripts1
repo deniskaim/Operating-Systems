@@ -1133,3 +1133,124 @@ while read filename; do
     ln -s "${myFile}" "${2}/by-title/$title.jpg"
 
 done < <(find "${1}" -type f -name "*.jpg")
+
+------------------------------------
+Зад. 42 2020-SE-05:
+Напишете shell скрипт, който приема 3 позиционни аргумента– две имена на файлове и име на директория.
+Примерно извикване:
+$ ./foo.sh foo.pwd config.cfg cfgdir
+В директорията cfgdir/ и нейните под-директории може да има файлове с имена завършващи на .cfg.
+За да са валидни, тези файлове трябва да съдържат редове само в следните формати (редоветезапочващи с # са коментари):
+# internal laboratory
+{ no-production };
+
+{ volatile };
+
+# meow configs
+{ run-all; };
+
+Във файла foo.pwd има описани потребителски имена (username) и MD5 хеш суми на паролите им, с по един запис на ред, в следния формат:
+ username:password_hash
+ Също така, разполагате с команда pwgen, която генерира и извежда на STDOUT случайни пароли, и знаете, че поддържа следните два аргумента:
+ $ pwgen [ password_length ] [ number_of_passwords ]
+
+ Вашият скрипт трябва да валидира cfg файловете в директорията, и за тези, които не са валидни, да извежда името на файла и номерирани редовете, които имат проблем, в следния формат:
+ Error in filename.cfg:
+ Line 1:XXXX
+ Line 37:YYYY
+ където XXXX и YYYY е съдържанието на съответния ред.
+
+ За валидните файлове, скриптът трябва да:
+ • генерира config.cfg като обединение на съдържанието им;
+ • името на файла, без частта .cfg дефинира потребителско име. 
+Ако във файла с паролите не съществува запис за този потребител, то такъв да се добави и 
+на стандартния изход да се изведе потребителското име и паролата (поне 16 символа) разделени с един интервал.
+
+Solution:
+#!/bin/bash
+
+if [[ ${#} -ne 3 ]]; then
+    echo "Illegal arguments count"
+    exit 1
+fi
+
+if [[ ! -f "${1}" ]]; then
+    echo "Argument 1 must be a file"
+    exit 2
+fi
+
+if [[ -e "${2}" ]]; then
+    echo "Argument 2 must not exist"
+    exit 3
+fi
+
+if [[ ! -d "${3}" ]]; then
+    echo "Argument 3 must be a directory"
+    exit 4
+fi
+
+cfgFiles=$(mktemp)
+find "${3}" -type f -name "*.cfg" 2>/dev/null >> "${cfgFiles}"
+
+function isValidFile {
+    filename="${1}"
+    errorsCount=0
+    lineCount=0
+
+    while read line; do
+        lineCount=$((lineCount+1))
+        if [[ -z "${line}" ]]; then
+            continue
+        fi
+
+        if [[ "${line}" = "# internal laboratory" ]]; then
+            lineCount=$((lineCount+1))
+            read nextLine
+            if [[ "${nextLine}" != "{ no-production };" ]]; then
+                errorsCount=$((errorsCount+1))
+                if [[ "$errorsCount" -eq 1 ]]; then
+                    echo "Error in $(basename "${filename}")"
+                fi
+                echo "Line ${lineCount}:${nextLine}"
+            fi
+
+        elif [[ "${line}" = "# meow configs" ]]; then
+            lineCount=$((lineCount+1))
+            read nextLine
+            if [[ "${nextLine}" != "{ run-all; };" ]]; then
+                errorsCount=$((errorsCount+1))
+                if [[ "${errorsCount}" -eq 1 ]]; then
+                    echo "Error in $(basename "${filename}")"
+                fi
+                echo "Line ${lineCount}:${nextLine}"
+            fi
+
+        elif [[ "${line}" != "{ volatile };" && "${line}" != "# internal laboratory" && "${line}" != "# meow configs" ]]; then
+            errorsCount=$((errorsCount+1))
+            if [[ "${errorsCount}" -eq 1 ]]; then
+                echo "Error in $(basename "${filename}")"
+            fi
+            echo "Line ${lineCount}:${line}"
+        fi
+
+    done < "${filename}"
+
+}
+while read file; do
+    result=$(isValidFile "${file}")
+    if [[ -n $(echo "${result}") ]]; then
+        echo "${result}"
+    else
+        cat "${file}" >> "${2}"
+        username=$(basename "${file}" | rev | cut -c 5- | rev)
+        if ! grep -q -E "^${username}:" "${1}"; then
+            password=$(pwgen 16 1)
+            echo "${username}:${password}" >> "${1}"
+            echo "${username}:${password}"
+        fi
+    fi
+
+
+done < "${cfgFiles}"
+
+rm -f "${cfgFiles}"
