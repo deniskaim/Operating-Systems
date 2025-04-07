@@ -922,3 +922,74 @@ done
 
 cat "${tempFile}" | sort -t ' ' -k 2,2 -V
 rm -f "${tempFile}"
+
+
+
+------------------------------------
+ Зад. 38 2020-SE-01
+
+Скриптът трябва да създава файла bar.csv 
+на база на log файловете в директорията. 
+Генерираният CSV файл от директория, която съдържа само loz-gw.log и border-lozenets.log би изглеждал така:
+
+ hostname,phy,vlans,hosts,failover,VPN-3DES-AES,peers,VLAN Trunk Ports,license,SN,key
+ loz-gw,8,20,Unlimited,Active/Standby,Enabled,25,8,ASA 5505 Security Plus,JMX00000000,0e268e0c
+ border-lozenets,4,16,Unlimited,Active/Active,Disabled,16,4,PIX 535,PIX5350007,0xd11b3d48
+
+Solution:
+
+#!/bin/bash
+
+if [[ ${#} -ne 2 ]]; then
+    echo "Illegal arguments count"
+    exit 1
+fi
+
+if [[ ! -f ${1} ]]; then
+    echo "Argument 1 must be a file"
+    exit 2
+fi
+
+if [[ ! -d "${2}" ]]; then
+    echo "Argument 2 must be a directory"
+    exit 3
+fi
+
+filename="${1}"
+dir="${2}"
+
+header="hostname,phy,vlans,host,failover,VPN-3DES-AES,peers,VLAN Trunk Ports,license,SN,key"
+echo ${header}
+
+function getCorrectBits {
+    if $(echo "${1}" | grep -q -E ': [^ ]+'); then
+        echo "${1}" | cut -d ':' -f 2 | cut -d ' ' -f 2
+    else
+        echo "${1}" | cut -d ' ' -f 2- | rev | cut -d ' ' -f 2- | rev
+    fi
+}
+
+function getInformation {
+    filename="${1}"
+
+    #first=$(cat "${filename}" | grep -E -o ': [^ ]+' | cut -d ':' -f 2 | cut -d ' ' -f 2)
+    #second=$(cat "${filename}" | grep -E -o '(a|an) .+ license' | cut -d ' ' -f 2- | rev | cut -d ' ' -f 2- | rev)
+
+    #cat "${filename}" | grep -E -o ': [^ ]+|(a|an) .+ license'
+    tempFile=$(mktemp)
+
+    while read line; do
+        echo -n $(getCorrectBits "${line}")"," >> "${tempFile}"
+    done < <(cat "${filename}" | grep -E -o ': [^ ]+|(a|an) .+ license')
+
+    echo "" >> "${tempFile}"
+    cat "${tempFile}" | rev | cut -c 2- | rev
+    rm -f "${tempFile}"
+}
+
+logFiles=$(find "${dir}" -type f -name "*.log")
+for line in ${logFiles}; do
+    echo -n "$(echo $(basename "${line}") | rev | cut -c 5- | rev),"
+    getInformation "${line}"
+done
+
