@@ -993,3 +993,143 @@ for line in ${logFiles}; do
     getInformation "${line}"
 done
 
+--------------------------------
+
+Зад. 39 2020-SE-02
+Напишете shell скрипт, който приема задължителен параметър- име на файл. Файлът е
+log файл на HTTP сървър,в който се записват всички получени от сървъра request-и, които клиентите
+са изпратили. Файлът е текстови, като на всеки ред има информация от следния вид:
+
+Solution:
+#!/bin/bash
+
+if [[ ${#} -ne 1 ]]; then
+    echo "Illegal arguments count"
+    exit 1
+fi
+
+if [[ ! -f ${1} ]]; then
+    echo "Argument 1 must be a file"
+    exit 2
+fi
+
+filename="${1}"
+top3Sites=$(cat "${filename}" | awk '{count[$2]+=1} END { for (site in count) { print count[site], site }}' | sort -t ' ' -k 1,1 -n -r | head -n 3)
+
+function getHTTP2Count {
+    site=${1}
+    version="HTTP/2.0"
+
+    cat "${filename}" | grep -E -o " ${site} .+ ${version} " | wc -l
+}
+
+function getTop5ClientsInfo {
+    site=${1}
+    cat "${filename}" | grep -E -o "^.* ${site} .*HTTP/... [0-9]{3}" | awk '$NF>302 {print $0}'
+}
+while read -r count site; do
+    http2Count=$(getHTTP2Count "${site}")
+    echo ${site} "HTTP/2.0:" "${http2Count}" "non-HTTP/2.0:" $((${count} - ${http2Count}))
+    getTop5ClientsInfo "${site}" | cut -d ' ' -f 1 | sort | uniq -c
+done < <(echo "${top3Sites}")
+
+--------------------------------
+
+Зад. 41 2020-SE-04
+Напишете скрипт, който приема два аргумента- имена на директории. Първата (SRC)
+ съществува, докато втората (DST) трябва да бъде създадена от скрипта. Директорията SRC и нейните
+ поддиректории може да съдържат файлове, чиито имена завършат на .jpg. Имената на файловете
+ може да съдържат интервали, както и поднизове, оградени със скоби, например:
+ A single (very ugly) tree (Outdoor treks) 2.jpg
+ Falcons.jpg
+ Gorgonzola (cheese).jpg
+ Leeches (two different ones) (Outdoor treks).jpg
+ Pom Pom Pom.jpg
+
+ За даден низ ще казваме, че е почистен, ако от него са премахнати leading и trailing интервалите и
+ всички последователни интервали са сведени до един.
+ За всеки файл дефинираме следните атрибути:
+ • заглавие- частта от името преди .jpg
+ , без елементи оградени в скоби, почистен. 
+Примери:
+ A single tree 2
+ Falcons
+ Gorgonzola
+ Leeches
+ Pom Pom Pom
+ • албум-последният елемент от името, който е бил ограден в скоби, почистен.Ако албум е празен
+ стринг, ползваме стойност по подразбиране misc
+ . Примери:
+ Outdoor treks
+ misc
+ cheese
+ Outdoor treks
+ misc
+ • дата- времето на последна модификация на съдържанието на файла, във формат YYYY-MM
+DD
+ • хеш- първите 16 символа от sha256 сумата на файла. Забележка: приемаме, че в тази идеална
+ вселена първите 16 символа от sha256 сумата са уникални за всеки файл от тези, които ще се
+ наложидаобработваме.
+ Скриптът трябва да създава в директория DST необходимата структура от под-директории, файлове
+ иsymlink–ове, така че да са изпълнени следните условия за всеки файл от SRC:
+ • DST/images/хеш.jpg- копие на съответния файл
+ • следните обекти са относителни symlink–ове към хеш.jpg
+ :– DST/by-date/дата/by-album/албум/by-title/заглавие.jpg– DST/by-date/дата/by-title/заглавие.jpg– DST/by-album/албум/by-date/дата/by-title/заглавие.jpg– DST/by-album/албум/by-title/заглавие.jpg– DST/by-title/заглавие.jpg
+Solution:
+#!/bin/bash
+
+if [[ ${#} -ne 2 ]]; then
+    echo "Illegal arguments count"
+    exit 1
+fi
+
+if [[ ! -d "${1}" ]]; then
+    echo "Argument 1 must be directory"
+    exit 2
+fi
+
+if [[ -e "${2}" ]]; then
+    echo "Argument 2 must not exist"
+    exit 3
+fi
+
+mkdir -p "$2/{images, by-date, by-album, by-title}"
+
+function getName {
+    filename="${1}"
+    echo "${filename}" | sed -E "s:( |)\(.*\):"":g" | sed -E "s:[ ]+: :g" | rev | cut -c 5- | rev
+}
+
+function getAlbum {
+    filename="${1}"
+    echo "${filename}" | grep -E -o ".{0}\([^\(\)]+\)[^\(\)]*.jpg$" | cut -d ')' -f 1 | cut -c 2-
+}
+
+while read filename; do
+    originalName="${filename}"
+    filename=$(basename "${filename}")
+
+    title=$(getName "${filename}")
+
+    album=$(getAlbum "${filename}")
+    if [[ -z "${album}" ]]; then
+        album="misk"
+    fi
+
+    date=$(stat "${originalName}" -c "%y" | cut -d ' ' -f 1)
+    hashValue=$(sha256sum "${originalName}" | cut -c -16)
+    cp "${originalName}" "${2}/images/$hashValue.jpg"
+    myFile="${2}/images/$hashValue.jpg"
+
+    mkdir -p "${2}/by-date/$date/by-title"
+    mkdir -p "${2}/by-date/$date/by-album/$album/by-title"
+    mkdir -p "${2}/by-album/$album/by-date/$date/by-title"
+    mkdir -p "${2}/by-album/$album/by-title"
+
+    ln -s "${myFile}" "${2}/by-date/$date/by-title/$title.jpg"
+    ln -s "${myFile}" "${2}/by-date/$date/by-album/$album/by-title/$title.jpg"
+    ln -s "${myFile}" "${2}/by-album/$album/by-date/$date/by-title/$title.jpg"
+    ln -s "${myFile}" "${2}/by-album/$album/by-title/$title.jpg"
+    ln -s "${myFile}" "${2}/by-title/$title.jpg"
+
+done < <(find "${1}" -type f -name "*.jpg")
