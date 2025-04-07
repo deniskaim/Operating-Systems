@@ -1254,3 +1254,34 @@ while read file; do
 done < "${cfgFiles}"
 
 rm -f "${cfgFiles}"
+
+
+--------------------------
+
+Зад. 43 2020-SE-06
+
+Solution:
+#!/bin/bash
+
+if [[ ${#} -ne 3 ]]; then
+    echo "Illegal arguments count"
+    exit 1
+fi
+
+if [[ ! -f "${1}" ]]; then
+    echo "Argument 1 must a file"
+    exit 2
+fi
+
+key="${2}"
+value="${3}"
+
+date=$(date)
+user=$(whoami)
+newLine="${key} = ${value} # added at ${date} by ${user}"
+
+sed -E -i "s|(^[ ]*${key}[ ]*=.*$)|\# \1 \# edited at ${date} by ${user}\n${newLine}|" "${1}"
+
+if ! $(grep -q "^${newLine}$" "${1}"); then
+    echo "${newLine}" >> "${1}"
+fi
