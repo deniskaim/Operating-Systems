@@ -783,3 +783,66 @@ fi
 
 rows=$(cat "${1}" | sort -t ',' -k 2 | sed -E "s:([1-9]+[0-9]*|0),:\1@:" | sort -V)
 echo "${rows}" | awk -F '@' '{if (!($2 in min)) {min[$2]=999999} if (min[$2]>$1) {min[$2]=$1}} END {for (curr in min) {print min[curr], curr}}' > "${2}"
+
+------------------------------------
+Зад. 35 2019-SE-01
+Напишете два скрипта (по един за всяка подточка), които четат редове от STDIN.
+Скриптовете трябва да обработват само редовете, които съдържат цели положителни или отрицателни числа;
+останалите редове се игнорират. 
+Скриптовете трябва да извежда на STDOUT:
+ а) всички уникални числа, чиято абсолютна стойност е равна на максималната абсолютна стойност сред всички числа
+ б) всички най-малки уникални числа от тези, които имат максимална сума на цифрите си
+
+A)
+
+Solution:
+#!/bin/bash
+
+maxAbsValue=-1
+validLines=$(mktemp)
+
+while read line; do
+    if $(echo "${line}" | grep -q -E '^(|-)([1-9]+[0-9]*|0)(|.[1-9]+)$'); then
+        maxAbsValue=$(echo "${line}" | awk -v currMax=${maxAbsValue} '{if (currMax<$1) {print $1} else if (currMax<-$1) {print -$1} else {print currMax}}')
+        echo "${line}" >> "${validLines}"
+    fi
+done
+
+cat "${validLines}" | sort | uniq | awk -v max="${maxAbsValue}" '$1==max || -$1==max {print $1}'
+rm -f "${validLines}"
+
+
+
+B)
+
+Solution:
+#!/bin/bash
+
+function getDigitsSum {
+    num=${1}
+    num=$(echo ${num} | sed -E 's/[^0-9]//g' | sed -E 's/^0*//')
+    sum=0
+    while [[ $num -gt 0 ]]; do
+        digit=$((num%10))
+        sum=$((sum+digit))
+        num=$((num/10))
+    done
+    echo "${sum}"
+}
+
+maxSum=-1
+
+fileName1=$(mktemp)
+
+while read line; do
+    if $(echo "${line}" | grep -q -E "^((|-)([1-9]+[0-9]*|0))(|.[0-9]+)$"); then
+        currSum=$(getDigitsSum ${line})
+        maxSum=$(echo "${maxSum} ${currSum}" | awk '{if ($1 > $2) {print $1} else {print $2}}')
+        if [[ ${maxSum} -eq ${currSum} ]]; then
+            echo ${line} >> "${fileName1}"
+        fi
+    fi
+done
+
+cat "${fileName1}" | sort -n | head -n 1
+rm -f "${fileName1}"
