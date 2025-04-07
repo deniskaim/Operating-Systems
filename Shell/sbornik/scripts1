@@ -671,3 +671,69 @@ cat ${fileFriends} | sort | uniq -c | head | awk '{print $2, $1}'
 
 rm -f "${fileName1}"
 rm -f "${fileFriends}"
+
+------------------------------------
+
+Напишете скрипт, който приема два позиционни аргумента– име на текстови файл и
+ директория. Директорията не трябва да съдържа обекти, а текстовият файл (US-ASCII) е стенограма
+ ивсеки ред е вследния формат:
+ ИМЕ ФАМИЛИЯ (уточнения): Реплика
+ където:
+ • ИМЕ ФАМИЛИЯ присъстват задължително;
+ • (уточнения)
+ се състоят само от малки/главни латински букви и тирета;
+ не езадължително да присъстват;
+ • двоеточието ‘:’ присъства задължително;
+ • Реплика в стринга преди двоеточието ‘:’ 
+ • задължително има поне един интервал между ИМЕ и ФАМИЛИЯ
+
+ • наличието надруги интервали където и да е нареда е недефинирано.
+
+ Примерен входен файл:
+ John Lennon (The Beatles): Time you enjoy wasting, was not wasted.
+ Roger Waters: I'm in competition with myself and I'm losing.
+ John Lennon:Reality leaves a lot to the imagination.
+ Leonard Cohen:There is a crack in everything, that's how the light gets in.
+
+ Скриптът трябва да:
+ • създава текстови файл dict.txt в посочената директория, който на всеки ред да съдържа:
+ ИМЕ ФАМИЛИЯ;НОМЕР
+ където:
+– ИМЕ ФАМИЛИЯ е уникален участник в стенограмата (без да се отчитат уточненията);
+– НОМЕР е уникален номер на този участник, избран от вас.
+ • създава файл НОМЕР.txt за дадения участник.
+
+Solution:
+
+#!/bin/bash
+
+if [[ ${#} -ne 2 ]]; then
+    echo "Illegal arguments count"
+    exit 1
+fi
+
+if [[ ! -f "${1}" ]]; then
+    echo "Argument 1 must be a file"
+    exit 2
+fi
+
+if [[ ! -d "${2}" ]]; then
+    echo "Argument 2 must be a directory"
+    exit 3
+fi
+
+if [[ ! -z $(find "${2}" -mindepth 1) ]]; then
+    echo "The directory must be empty"
+    exit 4
+fi
+
+output=$(grep -E -o "^.*:" "${1}" | cut -d ':' -f 1 | cut -d '(' -f 1 | awk '{print $1, $2}' | sort | uniq | awk '{print $1, $2 ";" NR}')
+echo "${output}" > "${2}/dict.txt"
+
+while read line; do
+    firstName=$(echo ${line} | cut -d ';' -f 1 | cut -d ' ' -f 1)
+    secondName=$(echo ${line} | cut -d ';' -f 1 | cut -d ' ' -f 2)
+    fileName=$(echo ${line} | cut -d ';' -f 2)
+    path="${2}/${fileName}"
+    grep -E "^${firstName}[ ]+${secondName}" "${1}" > "${path}"
+done < <(echo "${output}")
